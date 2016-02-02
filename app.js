@@ -26,26 +26,6 @@ var monumentsCurrent = L.esri.featureLayer({
   }
 }).addTo(map);
 
-/* geocoding control
-var sfBounds = L.latLngBounds([L.latLng(37.894904889, -122.34443664),
-  L.latLng(37.64658749, -122.8553009)
-]);
-
-var arcgisOnline = L.esri.Geocoding.arcgisOnlineProvider();
-var searchControl = L.esri.Geocoding.geosearch({
-  providers: [
-    new L.esri.Geocoding.FeatureLayerProvider({
-      label: 'Monument Name',
-      url: currentURL,
-      searchFields: ['name']
-    }),
-    arcgisOnline
-  ],
-  useMapBounds: false,
-  searchBounds: sfBounds
-}).addTo(map);
-*/
-
 // navbar search functionality
 $(document).ready(function() {
 
@@ -53,6 +33,12 @@ $(document).ready(function() {
   var navbarForm = $('#navbarForm');
   navbarForm.on('submit', function(event){
     event.preventDefault();
+  });
+
+  var navCancelSearch = $('#cancelSearch');
+  navCancelSearch.on('click', function(){
+    $('#searchResults').remove();
+    $('#navbarSearch').val("");
   });
 
   // when values entered create result collection
@@ -79,29 +65,39 @@ $(document).ready(function() {
   });
 
   var navbarQuery = function(val){
-    L.esri.query({
-      url: currentURL
-    }).where("name="+val+"").run(function(error, results){
+    monumentsCurrent.query().where("name like '"+val+"%'").run(function(error, results){
       $('a.collection-item').remove();
       if(results.features.length > 0){
-        for(var i = 0; i < results.features.length; i++){
-          var li = '<a href="#" class="collection-item">'+
+        for(var i = 0; i < 10; i++){
+          var li = '<a href="#" value="'+ results.features[i].properties.OBJECTID +'" class="collection-item">'+
                     results.features[i].properties.name+'</a>';
           $('#searchResults').prepend(li);
-          console.log(results.features[i].properties.name);
         }
       }
-      else {
+      $('a.collection-item').on('click', function(){
+        $('#searchResults').remove();
 
-      }
+        var oID = $(this).attr('value');        
+        monumentsCurrent.query().where("OBJECTID = '"+oID+"'").run(function(error, results){
+          var loc = L.latLng(results.features[0]['geometry']['coordinates'][1],
+                             results.features[0]['geometry']['coordinates'][0]);
+          map.setView(loc, 20);
+          clickedFeature = results.features[0];
+          startEditing(clickedFeature);
+          if (!currentlyDeleting) {
+            showAttributes();
+          }
+        });
+      });
+
       // draw neighborhood on the map
       //var point = L.geoJson(result);
       // fit map to boundry
       //map.fitBounds(point.getBounds().pad(0.5));
     });
   }
-});
 
+});
 
 
 
@@ -127,17 +123,18 @@ function checkImage(value) {
 }
 
 // start editing a given layer
-function startEditing(layer) {
-  document.getElementById("log_id").value = layer.feature.properties["log_id"];
-  document.getElementById("name").value = layer.feature.properties["name"];
-  document.getElementById("mon_type").value = layer.feature.properties["type"];
-  var image_url = layer.feature.properties["image_url"]
+var startEditing = function(feature) {
+  document.getElementById("log_id").value = feature.properties["log_id"];
+  document.getElementById("name").value = feature.properties["name"];
+  document.getElementById("mon_type").value = feature.properties["type"];
+  var image_url = feature.properties["image_url"]
   checkImage(image_url);
-
+  /*
   if (!disableEditing) {
     layer.editing.enable();
     currentlyEditing = layer;
   }
+  */
 }
 
 // stop editing a given layer
@@ -150,14 +147,14 @@ function stopEditing() {
   currentlyEditing = undefined;
 }
 
-function handleEdit(layer) {
+var handleEdit = function(feature) {
   // convert the layer to GeoJSON and build a new updated GeoJSON object for that feature
-  layer.feature.properties["log_id"] = document.getElementById("log_id").value;
+  feature.properties["log_id"] = document.getElementById("log_id").value;
   monumentsCurrent.updateFeature({
     type: 'Feature',
-    id: layer.feature.id,
-    geometry: layer.toGeoJSON().geometry,
-    properties: layer.feature.properties
+    id: feature.id,
+    geometry: feature.geometry,
+    properties: feature.properties
   }, function(error, response) {
 
   });
@@ -172,10 +169,9 @@ function hideAttributes() {
 }
 
 // when the map is clicked, stop editing
-map.on('click drag', function(e) {
+map.on('click', function(e) {
   stopEditing();
   hideAttributes();
-
   // hide search results if map clicked
   var searchResults = $('#searchResults');
   if(searchResults.length){
@@ -186,7 +182,7 @@ map.on('click drag', function(e) {
 // when a pedestrian district is clicked, stop editing the current feature and edit the clicked feature
 monumentsCurrent.on('click', function(e) {
   stopEditing();
-  startEditing(e.layer);
+  startEditing(e.layer.feature);
   if (!currentlyDeleting) {
     showAttributes();
   }
@@ -241,8 +237,6 @@ map.on('draw:deletestart', function() {
 // listen to the draw created event
 map.on('draw:created', function(e) {
   // add the feature as GeoJSON (feature will be converted to ArcGIS JSON internally)
-  console.log(e.layer);
-
   feature = {
     log_id: 9999,
     name: 9999999

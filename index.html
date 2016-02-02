@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v1.0.0-beta.2/leaflet.css" />
   <link rel="stylesheet" href="http://fonts.googleapis.com/icon?family=Material+Icons" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/css/materialize.min.css" />
-  <link rel="stylesheet" href="http://cdn.jsdelivr.net/leaflet.esri.geocoder/2.0.2/esri-leaflet-geocoder.css" />
   <link rel='stylesheet' href='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.css' />
   <style>
   body {
@@ -33,7 +32,7 @@
   }
   
   #searchResults {
-    z-index:500;
+    z-index:1001;
     margin: 0px;
 
   }
@@ -44,7 +43,7 @@
   #info-pane {
     display: none;
     position: absolute;
-    bottom: 20px;
+    bottom: -10px;
     right: 10px;
     padding-left: 10px;
     z-index: 400;
@@ -65,7 +64,7 @@
         <div class="input-field">
           <input id="navbarSearch" type="search" required autocomplete="off">
           <label for="navbarSearch"><i class="material-icons">search</i></label>
-          <i class="material-icons">close</i>
+          <i id="cancelSearch" class="material-icons">close</i>
         </div>
       </form>
     </div>
@@ -77,25 +76,23 @@
     <form action='#' id='form' class="card-panel white">
       <img id="mon_image" src="" alt="Monument Image" height="320" width="320">
       <div class="input-field col s6">
-        <input placeholder="mon #" type="text" id="name" class="validate">
+        <input placeholder="mon #" type="text" id="name" class="">
         <label for="name">Monument Name</label>
       </div>
       <div class="input-field col s6">
-        <input placeholder="log #" type="number" id="log_id" class="validate" disabled>
+        <input placeholder="log #" type="number" id="log_id" class="" disabled>
         <label for="log_id">log_id</label>
       </div>
       <div class="input-field col s12">
-        <input placeholder="type" type="text" id="mon_type" class="validate">
+        <input placeholder="type" type="text" id="mon_type" class="">
         <label for="mon_type">Monument Type</label>
       </div>
       <a id="attributeSaveBtn" href="#" class="waves-effect waves-white btn">Save</a>
-      <a id="attributeCloseBtn" href="#" class="waves-effect waves-red btn-flat">Close</a>
     </form>
   </div>
   <!-- libs -->
   <script src="http://cdn.leafletjs.com/leaflet/v1.0.0-beta.2/leaflet.js"></script>
   <script src="http://cdn.jsdelivr.net/leaflet.esri/2.0.0-beta.7/esri-leaflet.js"></script>
-  <script src="http://cdn.jsdelivr.net/leaflet.esri.geocoder/2.0.2/esri-leaflet-geocoder.js"></script>
   <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.js'></script>
   <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/js/materialize.min.js"></script>
