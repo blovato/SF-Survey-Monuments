@@ -6,25 +6,29 @@ $(document).ready(function() {
     $('#map').css('height', h - navHeight);
   });
   $(window).resize();
+  // init materialize selector
+  $('select').material_select();
 });
 
 // create the map
-var map = L.map('map').setView([37.825293, -122.370689], 16);
+var map = L.map('map', {attributionControl: false}).setView([37.825293, -122.370689], 16);
 var OpenStreetMap_Mapnik = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
 }).addTo(map);
 
 var currentURL = 'http://dev-gis:6080/arcgis/rest/services/SurveyMonuments/FeatureServer/0';
+var whereQuery = 'log_id in (select MAX(log_id) from [sde].[dbo].[SURVEYMONUMENTS] group by name)';
 // add our feature layer to the map
 var monumentsCurrent = L.esri.featureLayer({
-  url: 'http://dev-gis:6080/arcgis/rest/services/SurveyMonuments/FeatureServer/0',
+  url: currentURL,
   pointToLayer: function(geojson, latLng) {
     return L.marker(latLng, {icon: L.divIcon({className: 'div-icon'}) })
   },
-  where: "log_id in (select MAX(log_id) from [sde].[dbo].[SURVEYMONUMENTS] group by name)",
+  where: whereQuery,
   simplifyFactor: 1000,
   precision: 10
 }).addTo(map);
+
 
 var getLatestLogID = function(_callback){
   monumentsCurrent.query().where("log_id = (select MAX(log_id) from [sde].[dbo].[SURVEYMONUMENTS])").run(function(error, results) {
@@ -85,7 +89,6 @@ $(document).ready(function() {
 
   var navbarQuery = function(val) {
     monumentsCurrent.query().where("log_id in (select MAX(log_id) from [sde].[dbo].[SURVEYMONUMENTS] group by name) AND name like '" + val + "%'").run(function(error, results) {
-
       $('a.collection-item').remove();
 
       if (results.features.length > 0 && results.features.length < 10) {
@@ -147,6 +150,28 @@ map.addLayer(drawnItems);
 // track if we should disable custom editing as a result of other actions (create/delete)
 var disableEditing = false;
 
+// update feature from info pane
+$("#attributeSaveBtn").on("click", function(){
+  // if a layer is being edited, finish up and disable editing on it afterward.
+  if (currentlyEditing) {
+    // convert the layer to GeoJSON and build a new updated GeoJSON object for that feature
+    currentlyEditing.properties["log_id"] = document.getElementById("log_id").value;
+    monumentsCurrent.updateFeature({
+      type: 'Feature',
+      id: currentlyEditing.id,
+      geometry: currentlyEditing.geometry,
+      properties: currentlyEditing.properties
+    }, function(error, response) {
+      console.log(error);
+      console.log(response);
+    });
+    //currentlyEditing.editing.disable();
+  }
+
+  hideAttributes();
+  currentlyEditing = undefined;
+});
+
 // if feature has image set the value in the info window
 function checkImage(value) {
   if (value == "None" || value == null) {
@@ -158,18 +183,46 @@ function checkImage(value) {
   }
 }
 
-var nullStringify = function(str){
-  if(str == null){
-    return "";
-  }
-}
 // start editing a given layer, enters data in info table
 var startEditing = function(feature) {
-  document.getElementById("log_id").value = feature.properties["log_id"];
-  document.getElementById("name").value = feature.properties["name"];
-  document.getElementById("mon_type").value = nullStringify(feature.properties["type"]);
-  document.getElementById("mon_status").value = nullStringify(feature.properties["status"]);
-  document.getElementById("comments").value = nullStringify(feature.properties["comments"]);
+  console.log(feature.properties);
+
+  $("#log_id").val(feature.properties["log_id"]);
+  $("#name").val(feature.properties["name"]);
+
+  // type selector logic
+  var type = feature.properties["type"];
+  var idxParenthesis;
+  if(type != null){
+    idxParenthesis = type.indexOf(" (");
+  } else { type = "null";}
+
+  if(idxParenthesis > 2){
+    type = type.slice(0, idxParenthesis);
+  }
+  $("#mon_type option").filter(function() {
+    return this.text == type; 
+  }).attr('selected', true);
+  $('#mon_type').material_select();
+
+  // status selector logic
+  var status = feature.properties["status"];
+  if(status == null){
+    status = "null";
+  }else if(status == "Left as found" || status == "Rebuilt/Rehabilitated" || status == "Reestablished"){
+    status = "Found";
+  }else if(status == "Searched for not found"){
+    status = "Lost";
+  }
+  $("#mon_status option").filter(function() {
+    return this.text == status; 
+  }).attr('selected', true);
+  $('#mon_status').material_select();
+
+
+  $("#mon_status").val(feature.properties["status"]);
+  $("#comments").val(feature.properties["comments"]);
+
   var image_url = feature.properties["image_url"]
   checkImage(image_url);
 
@@ -200,17 +253,25 @@ function stopEditing() {
 }
 
 function showAttributes() {
-  document.getElementById("info-pane").style.display = 'block';
+  //document.getElementById("info-pane").style.display = 'block';
+  $("#info-pane").animate({
+    bottom: '-25px',
+    opacity: '1'
+  }, 80);
 }
 
 function hideAttributes() {
-  document.getElementById("info-pane").style.display = 'none';
+  //document.getElementById("info-pane").style.display = 'none';
+  var paneHeight = $("#info-pane").height() +50;
+  $("#info-pane").animate({
+    bottom: '-'+String(paneHeight)+'px',
+    opacity: '0'
+  }, 250);
 }
 
 
 // when a pedestrian district is clicked, stop editing the current feature and edit the clicked feature
 monumentsCurrent.on('click', function(e) {
-  //stopEditing();
   startEditing(e.layer.feature);
   //if(!disableEditing){
     map.removeLayer(tempMarker);
@@ -227,6 +288,7 @@ monumentsCurrent.on('click', function(e) {
 // when pedestrian districts start loading (because of pan/zoom) stop editing
 monumentsCurrent.on('loading', function() {
   //stopEditing();
+  currentlyEditing = undefined;
 });
 
 // when new features are loaded clear our current guides and feature groups
@@ -243,7 +305,7 @@ monumentsCurrent.on('load', function() {
 
 // when the map is clicked, stop editing
 map.on('click', function(e) {
-  //stopEditing();
+  currentlyEditing = undefined;
   hideAttributes();
 
   map.removeLayer(tempMarker);
@@ -283,10 +345,11 @@ map.on('draw:deletestart', function() {
   currentlyDeleting = true;
 });
 
+
 // listen to the draw created event
 map.on('draw:created', function(e) {
+  currentlyEditing = undefined;
   // add the feature as GeoJSON (feature will be converted to ArcGIS JSON internally)
-  stopEditing();
   if (!currentlyDeleting) {
     showAttributes();
   }
@@ -308,14 +371,32 @@ map.on('draw:created', function(e) {
 });
 
 map.on('draw:edited', function(e) {
-  Materialize.toast('Monument Edited', 4000);
 
-  var layers = e.layers;
-  layers.eachLayer(function(layer) {
-    //do whatever you want, most likely save back to db
+  e.layers.eachLayer(function(layer) {
+    getLatestLogID(function(resLog){
+  
+      var feature = layer.toGeoJSON();
+      feature.properties["log_id"] = resLog;
+      console.log(feature);
+
+      monumentsCurrent.addFeature(feature, function(error, response) {
+        console.log(error, response);
+        if(response.length == 0){
+          Materialize.toast('1 Monument Edited', 4000);
+        }else if(response.length >= 1){
+          Materialize.toast(response.length+' Monuments Edited', 4000);
+        } else {
+          Materialize.toast(error.message, 4000);
+        }
+      });
+      
+    });
   });
 });
 
+map.on("draw:deletestop", function(){
+  currentlyDeleting = false;
+});
 // listen to the draw deleted event
 map.on('draw:deleted', function(e) {
 
@@ -334,6 +415,7 @@ map.on('draw:deleted', function(e) {
       Materialize.toast(error.message, 4000);
     }
   });
+
   disableEditing = false;
   currentlyDeleting = false;
 });
