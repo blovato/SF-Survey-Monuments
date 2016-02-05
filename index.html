@@ -40,11 +40,20 @@
   #info-pane {
     /*display: none;*/
     position: absolute;
-    bottom: -400px;
+    opacity: 0;
+    bottom: -450px;
     right: 10px;
     padding-left: 10px;
     z-index: 1001;
     overflow: scroll-y;
+  }
+  #showHistoryBtn .btn-floating {
+    position: absolute !important;
+    top:-50;
+    right:20;
+  }
+  #historyContainer {
+    display: none;
   }
   
   #mon_image {
@@ -69,51 +78,70 @@
   <div id='map'></div>
   <!-- Attribute Info Pane -->
   <div id='info-pane' class="row">
-    <form action='#' id='form' class="card-panel white">
-      <img id="mon_image" src="" alt="Monument Image" height="320" width="320">
-      <div class="input-field col s6">
-        <input placeholder="mon #" type="text" id="name" class="">
-        <label for="name">Monument Name</label>
+    <a id="historyBtn" title="show monument history" class="btn-floating"><i id="historyBtnIcon" class="material-icons">add</i></a>
+    <div class="card-panel white">
+      
+      <div id="historyContainer" class="col s12">
+        <h4>Related History</h4>
+        <a href="">test</a><br>
+        <a href="">test</a><br>
+        <a href="">test</a><br>
+        <a href="">test</a><br>
+        <a href="">test</a><br>
       </div>
-      <div class="input-field col s6">
-        <input placeholder="log #" type="number" id="log_id" class="" disabled>
-        <label for="log_id">log_id</label>
-      </div>
+      <form action='#' id='form'>
+        <div class="input-field col s6">
+          <input placeholder="mon #" type="text" id="name" class="" required>
+          <label for="name">Monument Name</label>
+        </div>
+        <div class="input-field col s6">
+          <input placeholder="log #" type="number" id="log_id" class="" disabled required>
+          <label for="log_id">log_id</label>
+        </div>
 
-      <div class="input-field col s6">
-        <select id="mon_type">
-          <option value="null" disabled selected>Choose type</option>
-          <option value="Brass Disk">Brass Disk</option>
-          <option value="Railroad Spike">Railroad Spike</option>
-          <option value="Steel Anchor - with Washer">Steel Anchor - with Washer</option>
-          <option value="Stone or Concrete Monument - no well">Stone or Concrete Monument - no well</option>
-          <option value="Well Monument - Brass Disk">Well Monument - Brass Disk</option>
-          <option value="Well Monument - Iron Pin">Well Monument - Iron Pin</option>
-          <option value="Well Monument - Stone or Concrete Monument with Lead Plug and Brass Tack">Well Monument - Stone or Concrete Monument with Lead Plug and Brass Tack</option>
-          <option value="Other">Other</option>
-        </select>
-        <label>Type</label>
-      </div>
+        <div class="input-field col s6">
+          <select id="mon_type">
+            <option value="null" disabled selected>Choose type</option>
+            <option value="Brass Disk">Brass Disk</option>
+            <option value="Railroad Spike">Railroad Spike</option>
+            <option value="Steel Anchor - with Washer">Steel Anchor - with Washer</option>
+            <option value="Stone or Concrete Monument - no well">Stone or Concrete Monument - no well</option>
+            <option value="Well Monument - Brass Disk">Well Monument - Brass Disk</option>
+            <option value="Well Monument - Iron Pin">Well Monument - Iron Pin</option>
+            <option value="Well Monument - Stone or Concrete Monument with Lead Plug and Brass Tack">Well Monument - Stone or Concrete Monument with Lead Plug and Brass Tack</option>
+            <option value="Other">Other</option>
+          </select>
+          <label>Type</label>
+        </div>
 
-      <div class="input-field col s6">
-        <select id="mon_status">
-          <option value="null" disabled selected>Choose status</option>
-          <option value="Found">Found</option>
-          <option value="Lost">Lost</option>
-          <option value="Destroyed/Obliterated">Obliterated</option>
-          <option value="New">New</option>
-          <option value="Unknown">Unknown</option>
-        </select>
-        <label>Status</label>
+        <div class="input-field col s6">
+          <select id="mon_status">
+            <option value="null" disabled selected>Choose status</option>
+            <option value="Found">Found</option>
+            <option value="Lost">Lost</option>
+            <option value="Destroyed/Obliterated">Obliterated</option>
+            <option value="New">New</option>
+            <option value="Unknown">Unknown</option>
+          </select>
+          <label>Status</label>
 
-      </div>
+        </div>
 
-      <div class="input-field col s12">
-        <input placeholder="comments" type="text" id="comments" class="">
-        <label for="comments">Comments</label>
-      </div>
-      <a id="attributeSaveBtn" href="#" class="waves-effect waves-white btn">Save</a>
-    </form>
+        <div class="input-field col s12">
+          <input placeholder="comments" type="text" id="comments" class="">
+          <label for="comments">Comments</label>
+        </div>
+        <div class="input-field col s12">
+          <input placeholder="ex. http://bsm.sfdpw.org/photo.jpg" type="url" id="image_url" class="validate">
+          <label for="image_url">Image Url</label>
+        </div>
+        
+        <a id="attributeSaveBtn" href="#" class="waves-effect waves-white btn">Save</a>
+        
+      </form>
+    </div>
+    
+
   </div>
   <!-- libs -->
   <script src="http://cdn.leafletjs.com/leaflet/v1.0.0-beta.2/leaflet.js"></script>
