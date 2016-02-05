@@ -11,7 +11,9 @@ $(document).ready(function() {
 });
 
 // create the map
-var map = L.map('map', {attributionControl: false}).setView([37.825293, -122.370689], 16);
+var map = L.map('map', {
+  attributionControl: false
+}).setView([37.825293, -122.370689], 16);
 var OpenStreetMap_Mapnik = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
 }).addTo(map);
@@ -22,35 +24,42 @@ var whereQuery = 'log_id in (SELECT MAX(log_id) FROM [sde].[dbo].[SFMONUMENTS] G
 var monumentsCurrent = L.esri.featureLayer({
   url: currentURL,
   pointToLayer: function(geojson, latLng) {
-    return L.marker(latLng, {icon: L.divIcon({className: 'div-icon'}) })
+    return L.marker(latLng, {
+      icon: L.divIcon({
+        className: 'div-icon'
+      })
+    })
   },
   where: whereQuery,
   simplifyFactor: 1000,
   precision: 10
 }).addTo(map);
-monumentsCurrent.metadata(function(data){
-  console.log(data);
-});
 
-var getLatestLogID = function(_callback){
+var getLatestLogID = function(_callback) {
   monumentsCurrent.query().where("log_id = (select MAX(log_id) from [sde].[dbo].[SFMONUMENTS])").run(function(error, results) {
-    if(error) console.log(error);
-    _callback(results.features[0].properties.log_id+1);
+    if (error) console.log(error);
+    _callback(results.features[0].properties.log_id + 1);
   });
 }
-var getLatestMonName = function(_callback){
+var getLatestMonName = function(_callback) {
   monumentsCurrent.query().where("name = (select MAX(name) from [sde].[dbo].[SFMONUMENTS])").run(function(error, results) {
-    if(error) console.log(error);
-    _callback(results.features[0].properties.name+1);
+    if (error) console.log(error);
+    _callback(results.features[0].properties.name + 1);
   });
 }
+var getHistoricalLogs = function(monName, _callback) {
+  monumentsCurrent.query().where("name_1 = '" + monName + "'").run(function(error, results) {
+    if (error) console.log(error);
+    _callback(results.features.reverse());
+  });
+};
 
 // function to create marker upon request
 var temporaryMarker = function(lat, lng) {
   loc = L.latLng(lat, lng);
   tempMarker = L.marker(loc).addTo(map);
 }
-temporaryMarker(1000,1000);
+temporaryMarker(1000, 1000);
 map.removeLayer(tempMarker);
 
 // navbar search functionality
@@ -155,12 +164,12 @@ map.addLayer(drawnItems);
 var disableEditing = false;
 
 // update feature from info pane
-$("#attributeSaveBtn").on("click", function(){
+$("#attributeSaveBtn").on("click", function() {
   // if a layer is being edited, finish up and disable editing on it afterward.
   if (currentlyEditing) {
     var feature = currentlyEditing;
 
-    getLatestLogID(function(resLog){
+    getLatestLogID(function(resLog) {
       console.log(resLog);
       feature.properties["log_id"] = resLog;
       feature.properties["name_1"] = $("#name").val();
@@ -178,10 +187,9 @@ $("#attributeSaveBtn").on("click", function(){
       }, function(error, response) {
         console.log(error);
         console.log(response);
-        if(response){
+        if (response) {
           Materialize.toast("Edit Successful", 4000);
-        }
-        else {
+        } else {
           Materialize.toast("Edit Failed", 4000);
         }
       });
@@ -193,9 +201,13 @@ $("#attributeSaveBtn").on("click", function(){
 });
 
 //animate rotate div function
-var animateRotate = function(startAngle,endAngle, speed) {
+var animateRotate = function(startAngle, endAngle, speed) {
   var elem = $("#historyBtnIcon");
-  $({deg: startAngle}).animate({deg: endAngle}, {
+  $({
+    deg: startAngle
+  }).animate({
+    deg: endAngle
+  }, {
     duration: speed,
     step: function(now) {
       elem.css({
@@ -205,37 +217,22 @@ var animateRotate = function(startAngle,endAngle, speed) {
   });
 }
 
-
-$("#historyBtn").on('click', function(){
-  var hist = $("#historyContainer");
-  if(hist.css('display') == "none"){
-    animateRotate(0,45, 100);
-    showHistory();
-  }else {
-    animateRotate(45, 90, 100);
-    hideHistory();
-  }
-});
-
-var showHistory = function(){
-  $("#historyContainer").show(150);
-};
-
-var hideHistory = function(){
-  $("#historyContainer").hide(200);
-};
-
 function showAttributes() {
+  var bottomH;
+  var windowW = $( window ).width();
+  if(windowW > 989) bottomH = "-41px";
+  else bottomH = "-60px";
+
   $("#info-pane").animate({
-    bottom: '-25px',
+    bottom: bottomH,
     opacity: '1'
   }, 80);
 }
 
 function hideAttributes() {
-  var paneHeight = $("#info-pane").height() +50;
+  var paneHeight = $("#info-pane").height() + 50;
   $("#info-pane").animate({
-    bottom: '-'+String(paneHeight)+'px',
+    bottom: '-' + String(paneHeight) + 'px',
     opacity: '0'
   }, 250);
 }
@@ -249,29 +246,31 @@ var startEditing = function(feature) {
   // type selector logic
   var type = feature.properties["mon_type"];
   var idxParenthesis;
-  if(type != null){
+  if (type != null) {
     idxParenthesis = type.indexOf(" (");
-  } else { type = "null";}
+  } else {
+    type = "null";
+  }
 
-  if(idxParenthesis > 2){
+  if (idxParenthesis > 2) {
     type = type.slice(0, idxParenthesis);
   }
   $("#mon_type option").filter(function() {
-    return this.text == type; 
+    return this.text == type;
   }).attr('selected', true);
   $('#mon_type').material_select();
 
   // status selector logic
   var status = feature.properties["status"];
-  if(status == null){
+  if (status == null) {
     status = "null";
-  }else if(status == "Left as found" || status == "Rebuilt/Rehabilitated" || status == "Reestablished"){
+  } else if (status == "Left as found" || status == "Rebuilt/Rehabilitated" || status == "Reestablished") {
     status = "Found";
-  }else if(status == "Searched for not found"){
+  } else if (status == "Searched for not found") {
     status = "Lost";
   }
   $("#mon_status option").filter(function() {
-    return this.text == status; 
+    return this.text == status;
   }).attr('selected', true);
   $('#mon_status').material_select();
 
@@ -284,12 +283,52 @@ var startEditing = function(feature) {
     //feature.editing.enable();
     currentlyEditing = feature;
   }
+
+  // get historical log_ids
+  getHistoricalLogs(currentlyEditing.properties.name_1, function(data) {
+    console.log(data);
+    if (data.length <= 1) {
+      $("#historyBtn").fadeOut(100);
+      $("#histTableBody").hide();
+    } else {
+      $("#historyBtn").fadeIn(150);
+      $("#histTableBody").empty();
+
+      var table = $("#histTableBody");
+      for (var i = 0; i < data.length - 1; i++) {
+        var row = $("<tr id='" + data[i].properties.name + "row" + i + "'></tr>");
+        row.append("<td>" + data[i].properties.log_id + "</td>");
+        row.append("<td>" + data[i].properties.mon_type + "</td>");
+        row.append("<td>" + data[i].properties.status + "</td>");
+        row.append("<td>" + data[i].properties.comments + "</td>");
+        row.append("<td>" + data[i].properties.image_url + "</td>");
+        table.append(row);
+      }
+      $("#histTableBody").show();
+    }
+  });
 }
+
+// open close control for history div in info pane
+$("#historyBtn").on('click', function() {
+  var hist = $("#historyContainer");
+  if (hist.css('display') == "none") {
+    animateRotate(0, 45, 100);
+    $("#historyContainer").show();
+  } else {
+    animateRotate(45, 90, 100);
+    $("#historyContainer").hide();
+  }
+});
+
 
 // when a pedestrian district is clicked, stop editing the current feature and edit the clicked feature
 monumentsCurrent.on('click', function(e) {
+  // hide history info if clicked off
+  $("#historyContainer").hide();
+
   startEditing(e.layer.feature);
-  if(!currentlyEditing || !currentlyDeleting){
+  if (!currentlyEditing || !currentlyDeleting) {
     map.removeLayer(tempMarker);
     temporaryMarker(e.layer.feature.geometry.coordinates[1], e.layer.feature.geometry.coordinates[0]);
     currentlyEditing = e.layer.feature;
@@ -323,6 +362,9 @@ map.on('click', function(e) {
   currentlyEditing = undefined;
   hideAttributes();
 
+  // hide history info if clicked off
+  $("#historyContainer").hide();
+
   map.removeLayer(tempMarker);
   // hide search results if map clicked
   var searchResults = $('#searchResults');
@@ -336,6 +378,7 @@ var drawControl = new L.Control.Draw({
   edit: {
     featureGroup: drawnItems, // allow editing/deleting of features in this group
     edit: true // disable the edit tool (since we are doing editing ourselves)
+    //remove: false Disable deletion on production
   },
   draw: {
     rectangle: false,
@@ -363,12 +406,13 @@ map.on('draw:deletestart', function() {
 // listen to the draw created event
 map.on('draw:created', function(e) {
 
-  getLatestLogID(function(resLog){
-    getLatestMonName(function(resName){
+  getLatestLogID(function(resLog) {
+    getLatestMonName(function(resName) {
       var feature = e.layer.toGeoJSON();
       feature.properties["log_id"] = resLog;
       feature.properties["name_1"] = resName;
-      feature.properties["name"] = resName;
+      feature.properties["name"] = resName;      
+      feature.properties["id"] = resName+"_"+String(resLog);
       feature.properties["latitude"] = feature.geometry.coordinates[1];
       feature.properties["longitude"] = feature.geometry.coordinates[0];
       feature.properties["Measure_Date"] = String(Date.now());
@@ -390,28 +434,30 @@ map.on('draw:created', function(e) {
 map.on('draw:edited', function(e) {
 
   e.layers.eachLayer(function(layer) {
-    getLatestLogID(function(resLog){
-  
+    getLatestLogID(function(resLog) {
+
       var feature = layer.toGeoJSON();
       feature.properties["log_id"] = resLog;
+      feature.properties["id"] = feature.properties["name_1"]+"_"+String(resLog);
+
       console.log(feature);
 
       monumentsCurrent.addFeature(feature, function(error, response) {
         console.log(error, response);
-        if(response.length == 0){
+        if (response.length == 0) {
           Materialize.toast('1 Monument Edited', 4000);
-        }else if(response.length >= 1){
-          Materialize.toast(response.length+' Monuments Edited', 4000);
+        } else if (response.length >= 1) {
+          Materialize.toast(response.length + ' Monuments Edited', 4000);
         } else {
           Materialize.toast(error, 4000);
         }
       });
-      
+
     });
   });
 });
 
-map.on("draw:deletestop", function(){
+map.on("draw:deletestop", function() {
   currentlyDeleting = false;
 });
 // listen to the draw deleted event
@@ -424,12 +470,12 @@ map.on('draw:deleted', function(e) {
   });
   monumentsCurrent.deleteFeatures(delArray, function(error, response) {
     console.log(error, response);
-    if(error){
+    if (error) {
       Materialize.toast(error, 4000)
-    } else if(response.length == 1){
+    } else if (response.length == 1) {
       Materialize.toast('1 Monument Deleted', 4000);
-    } else if(response.length > 1){
-      Materialize.toast(response.length+' Monuments Deleted', 4000);
+    } else if (response.length > 1) {
+      Materialize.toast(response.length + ' Monuments Deleted', 4000);
     } else {
       Materialize.toast(error.message, 4000);
     }
