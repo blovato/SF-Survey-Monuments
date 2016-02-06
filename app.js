@@ -239,7 +239,11 @@ function hideAttributes() {
 
 // start editing a given layer, enters data in info table
 var startEditing = function(feature) {
+  // reset +/x btn on open
+  $("#historyBtnIcon").css("transform", "rotate(0)");
 
+  // set input values
+  //
   $("#log_id").val(feature.properties["log_id"]);
   $("#name").val(feature.properties["name_1"]);
 
@@ -313,14 +317,13 @@ var startEditing = function(feature) {
 $("#historyBtn").on('click', function() {
   var hist = $("#historyContainer");
   if (hist.css('display') == "none") {
-    animateRotate(0, 45, 100);
+    animateRotate(0, 45, 600);
     $("#historyContainer").show();
   } else {
-    animateRotate(45, 90, 100);
+    animateRotate(45, 90, 600);
     $("#historyContainer").hide();
   }
 });
-
 
 // when a pedestrian district is clicked, stop editing the current feature and edit the clicked feature
 monumentsCurrent.on('click', function(e) {
